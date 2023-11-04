@@ -7,7 +7,9 @@
 
 # pwd based on the value of _ZO_RESOLVE_SYMLINKS.
 function __zoxide_pwd() {
-{%- if resolve_symlinks %}
+{%- if cfg!(windows) %}
+    \command cygpath -w "$(\builtin pwd -P)"
+{%- else if resolve_symlinks %}
     \builtin pwd -P
 {%- else %}
     \builtin pwd -L
@@ -32,7 +34,8 @@ function __zoxide_cd() {
 {%- if hook == InitHook::Prompt %}
 function __zoxide_hook() {
     \builtin local -r retval="$?"
-    \command zoxide add -- "$(__zoxide_pwd || \builtin true)"
+    # shellcheck disable=SC2312
+    \command zoxide add -- "$(__zoxide_pwd)"
     return "${retval}"
 }
 {%- else if hook == InitHook::Pwd %}
@@ -58,8 +61,7 @@ fi
 {% endif -%}
 
 {{ section }}
-# When using zoxide with --no-aliases, alias these internal functions as
-# desired.
+# When using zoxide with --no-cmd, alias these internal functions as desired.
 #
 
 __zoxide_z_prefix='z#'
@@ -73,13 +75,14 @@ function __zoxide_z() {
         __zoxide_cd "${OLDPWD}"
     elif [[ $# -eq 1 && -d $1 ]]; then
         __zoxide_cd "$1"
-    elif [[ ${@: -1} == "${__zoxide_z_prefix}"* ]]; then
+    elif [[ ${@: -1} == "${__zoxide_z_prefix}"?* ]]; then
         # shellcheck disable=SC2124
         \builtin local result="${@: -1}"
         __zoxide_cd "{{ "${result:${#__zoxide_z_prefix}}" }}"
     else
         \builtin local result
-        result="$(\command zoxide query --exclude "$(__zoxide_pwd || \builtin true)" -- "$@")" &&
+        # shellcheck disable=SC2312
+        result="$(\command zoxide query --exclude "$(__zoxide_pwd)" -- "$@")" &&
             __zoxide_cd "${result}"
     fi
 }
@@ -87,29 +90,22 @@ function __zoxide_z() {
 # Jump to a directory using interactive search.
 function __zoxide_zi() {
     \builtin local result
-    result="$(\command zoxide query -i -- "$@")" && __zoxide_cd "${result}"
+    result="$(\command zoxide query --interactive -- "$@")" && __zoxide_cd "${result}"
 }
 
 {{ section }}
-# Convenient aliases for zoxide. Disable these using --no-aliases.
+# Commands for zoxide. Disable these using --no-cmd.
 #
 
 {%- match cmd %}
 {%- when Some with (cmd) %}
 
-# Remove definitions.
-function __zoxide_unset() {
-    \builtin unset -f "$@" &>/dev/null
-    \builtin unset -v "$@" &>/dev/null
-    \builtin unalias "$@" &>/dev/null || \builtin :
-}
-
-__zoxide_unset {{cmd}}
+\builtin unalias {{cmd}} &>/dev/null || \builtin true
 function {{cmd}}() {
     __zoxide_z "$@"
 }
 
-__zoxide_unset {{cmd}}i
+\builtin unalias {{cmd}}i &>/dev/null || \builtin true
 function {{cmd}}i() {
     __zoxide_zi "$@"
 }
@@ -130,18 +126,21 @@ if [[ ${BASH_VERSINFO[0]:-0} -eq 4 && ${BASH_VERSINFO[1]:-0} -ge 4 || ${BASH_VER
 
         # If there is only one argument, use `cd` completions.
         if [[ {{ "${#COMP_WORDS[@]}" }} -eq 2 ]]; then
-            \builtin mapfile -t COMPREPLY < \
-                <(\builtin compgen -A directory -S / -- "${COMP_WORDS[-1]}" || \builtin true)
+            \builtin mapfile -t COMPREPLY < <(
+                \builtin compgen -A directory -- "${COMP_WORDS[-1]}" || \builtin true
+            )
         # If there is a space after the last word, use interactive selection.
-        elif [[ -z ${COMP_WORDS[-1]} ]]; then
+        elif [[ -z ${COMP_WORDS[-1]} ]] && [[ ${COMP_WORDS[-2]} != "${__zoxide_z_prefix}"?* ]]; then
             \builtin local result
-            result="$(\command zoxide query -i -- "{{ "${COMP_WORDS[@]:1:${#COMP_WORDS[@]}-2}" }}")" &&
-                COMPREPLY=("${__zoxide_z_prefix}${result@Q}")
+            # shellcheck disable=SC2312
+            result="$(\command zoxide query --exclude "$(__zoxide_pwd)" --interactive -- "{{ "${COMP_WORDS[@]:1:${#COMP_WORDS[@]}-2}" }}")" &&
+                COMPREPLY=("${__zoxide_z_prefix}${result}/")
             \builtin printf '\e[5n'
         fi
     }
 
-    \builtin complete -F __zoxide_z_complete -o nospace -- {{cmd}}
+    \builtin complete -F __zoxide_z_complete -o filenames -- {{cmd}}
+    \builtin complete -r {{cmd}}i &>/dev/null || \builtin true
 fi
 
 {%- when None %}

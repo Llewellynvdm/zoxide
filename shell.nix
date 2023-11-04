@@ -1,13 +1,22 @@
 let
-  rust = import (builtins.fetchTarball
-    "https://github.com/oxalica/rust-overlay/archive/46d8d20fce510c6a25fa66f36e31f207f6ea49e4.tar.gz");
   pkgs = import (builtins.fetchTarball
-    "https://github.com/NixOS/nixpkgs/archive/fae46e66a5df220327b45e0d7c27c6961cf922ce.tar.gz") {
+    "https://github.com/NixOS/nixpkgs/archive/22a6958f46fd8e14830d02856ff63b1d0e5cc3e4.tar.gz") {
       overlays = [ rust ];
     };
+  rust = import (builtins.fetchTarball
+    "https://github.com/oxalica/rust-overlay/archive/a61fcd9910229d097ffef92b5a2440065e3b64d5.tar.gz");
+
+  rust-nightly =
+    pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);
+  cargo-udeps = pkgs.writeShellScriptBin "cargo-udeps" ''
+    export RUSTC="${rust-nightly}/bin/rustc";
+    export CARGO="${rust-nightly}/bin/cargo";
+    exec "${pkgs.cargo-udeps}/bin/cargo-udeps" "$@"
+  '';
 in pkgs.mkShell {
   buildInputs = [
     # Rust
+    (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.rustfmt))
     pkgs.rust-bin.stable.latest.default
 
     # Shells
@@ -21,7 +30,11 @@ in pkgs.mkShell {
     pkgs.zsh
 
     # Tools
-    pkgs.cargo-audit
+    cargo-udeps
+    pkgs.cargo-msrv
+    pkgs.cargo-nextest
+    pkgs.cargo-udeps
+    pkgs.just
     pkgs.mandoc
     pkgs.nixfmt
     pkgs.nodePackages.markdownlint-cli
@@ -30,6 +43,7 @@ in pkgs.mkShell {
     pkgs.python3Packages.pylint
     pkgs.shellcheck
     pkgs.shfmt
+    pkgs.yamlfmt
 
     # Dependencies
     pkgs.cacert
@@ -38,5 +52,5 @@ in pkgs.mkShell {
     pkgs.libiconv
   ];
 
-  RUST_BACKTRACE = 1;
+  CARGO_TARGET_DIR = "target_nix";
 }

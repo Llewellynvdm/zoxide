@@ -108,8 +108,7 @@ if "__zoxide_hook" not in globals():
 {% endif %}
 
 {{ section }}
-# When using zoxide with --no-aliases, alias these internal functions as
-# desired.
+# When using zoxide with --no-cmd, alias these internal functions as desired.
 #
 
 
@@ -157,7 +156,7 @@ def __zoxide_zi(args: typing.List[str]) -> None:
 
 
 {{ section }}
-# Convenient aliases for zoxide. Disable these using --no-aliases.
+# Commands for zoxide. Disable these using --no-cmd.
 #
 
 {%- match cmd %}

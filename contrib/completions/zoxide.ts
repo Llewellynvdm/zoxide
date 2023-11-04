@@ -8,11 +8,11 @@ const completion: Fig.Spec = {
       options: [
         {
           name: ["-h", "--help"],
-          description: "Print help information",
+          description: "Print help",
         },
         {
           name: ["-V", "--version"],
-          description: "Print version information",
+          description: "Print version",
         },
       ],
       args: {
@@ -22,22 +22,100 @@ const completion: Fig.Spec = {
       },
     },
     {
+      name: "edit",
+      description: "Edit the database",
+      subcommands: [
+        {
+          name: "decrement",
+          hidden: true,
+          options: [
+            {
+              name: ["-h", "--help"],
+              description: "Print help",
+            },
+            {
+              name: ["-V", "--version"],
+              description: "Print version",
+            },
+          ],
+          args: {
+            name: "path",
+          },
+        },
+        {
+          name: "delete",
+          hidden: true,
+          options: [
+            {
+              name: ["-h", "--help"],
+              description: "Print help",
+            },
+            {
+              name: ["-V", "--version"],
+              description: "Print version",
+            },
+          ],
+          args: {
+            name: "path",
+          },
+        },
+        {
+          name: "increment",
+          hidden: true,
+          options: [
+            {
+              name: ["-h", "--help"],
+              description: "Print help",
+            },
+            {
+              name: ["-V", "--version"],
+              description: "Print version",
+            },
+          ],
+          args: {
+            name: "path",
+          },
+        },
+        {
+          name: "reload",
+          hidden: true,
+          options: [
+            {
+              name: ["-h", "--help"],
+              description: "Print help",
+            },
+            {
+              name: ["-V", "--version"],
+              description: "Print version",
+            },
+          ],
+        },
+      ],
+      options: [
+        {
+          name: ["-h", "--help"],
+          description: "Print help",
+        },
+        {
+          name: ["-V", "--version"],
+          description: "Print version",
+        },
+      ],
+    },
+    {
       name: "import",
       description: "Import entries from another application",
       options: [
         {
           name: "--from",
           description: "Application to import from",
+          isRepeatable: true,
           args: {
             name: "from",
             suggestions: [
-              {
-                name: "autojump",
-              },
-              {
-                name: "z",
-              },
-            ]
+              "autojump",
+              "z",
+            ],
           },
         },
         {
@@ -46,11 +124,11 @@ const completion: Fig.Spec = {
         },
         {
           name: ["-h", "--help"],
-          description: "Print help information",
+          description: "Print help",
         },
         {
           name: ["-V", "--version"],
-          description: "Print version information",
+          description: "Print version",
         },
       ],
       args: {
@@ -64,7 +142,8 @@ const completion: Fig.Spec = {
       options: [
         {
           name: "--cmd",
-          description: "Renames the 'z' command and corresponding aliases",
+          description: "Changes the prefix of the `z` and `zi` commands",
+          isRepeatable: true,
           args: {
             name: "cmd",
             isOptional: true,
@@ -72,64 +151,43 @@ const completion: Fig.Spec = {
         },
         {
           name: "--hook",
-          description: "Chooses event upon which an entry is added to the database",
+          description: "Changes how often zoxide increments a directory's score",
+          isRepeatable: true,
           args: {
             name: "hook",
             isOptional: true,
             suggestions: [
-              {
-                name: "none",
-              },
-              {
-                name: "prompt",
-              },
-              {
-                name: "pwd",
-              },
-            ]
+              "none",
+              "prompt",
+              "pwd",
+            ],
           },
         },
         {
-          name: "--no-aliases",
-          description: "Prevents zoxide from defining any commands",
+          name: "--no-cmd",
+          description: "Prevents zoxide from defining the `z` and `zi` commands",
         },
         {
           name: ["-h", "--help"],
-          description: "Print help information",
+          description: "Print help",
         },
         {
           name: ["-V", "--version"],
-          description: "Print version information",
+          description: "Print version",
         },
       ],
       args: {
         name: "shell",
         suggestions: [
-          {
-            name: "bash",
-          },
-          {
-            name: "elvish",
-          },
-          {
-            name: "fish",
-          },
-          {
-            name: "nushell",
-          },
-          {
-            name: "posix",
-          },
-          {
-            name: "powershell",
-          },
-          {
-            name: "xonsh",
-          },
-          {
-            name: "zsh",
-          },
-        ]
+          "bash",
+          "elvish",
+          "fish",
+          "nushell",
+          "posix",
+          "powershell",
+          "xonsh",
+          "zsh",
+        ],
       },
     },
     {
@@ -138,7 +196,8 @@ const completion: Fig.Spec = {
       options: [
         {
           name: "--exclude",
-          description: "Exclude a path from results",
+          description: "Exclude the current directory",
+          isRepeatable: true,
           args: {
             name: "exclude",
             isOptional: true,
@@ -146,16 +205,24 @@ const completion: Fig.Spec = {
           },
         },
         {
-          name: "--all",
-          description: "Show deleted directories",
+          name: ["-a", "--all"],
+          description: "Show unavailable directories",
         },
         {
           name: ["-i", "--interactive"],
           description: "Use interactive selection",
+          exclusiveOn: [
+            "-l",
+            "--list",
+          ],
         },
         {
           name: ["-l", "--list"],
           description: "List all matching directories",
+          exclusiveOn: [
+            "-i",
+            "--interactive",
+          ],
         },
         {
           name: ["-s", "--score"],
@@ -163,15 +230,16 @@ const completion: Fig.Spec = {
         },
         {
           name: ["-h", "--help"],
-          description: "Print help information",
+          description: "Print help",
         },
         {
           name: ["-V", "--version"],
-          description: "Print version information",
+          description: "Print version",
         },
       ],
       args: {
         name: "keywords",
+        isVariadic: true,
         isOptional: true,
       },
     },
@@ -180,20 +248,17 @@ const completion: Fig.Spec = {
       description: "Remove a directory from the database",
       options: [
         {
-          name: ["-i", "--interactive"],
-          description: "Use interactive selection",
-        },
-        {
           name: ["-h", "--help"],
-          description: "Print help information",
+          description: "Print help",
         },
         {
           name: ["-V", "--version"],
-          description: "Print version information",
+          description: "Print version",
         },
       ],
       args: {
         name: "paths",
+        isVariadic: true,
         isOptional: true,
         template: "folders",
       },
@@ -202,11 +267,11 @@ const completion: Fig.Spec = {
   options: [
     {
       name: ["-h", "--help"],
-      description: "Print help information",
+      description: "Print help",
     },
     {
       name: ["-V", "--version"],
-      description: "Print version information",
+      description: "Print version",
     },
   ],
 };
